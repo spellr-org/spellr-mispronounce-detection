@@ -4,14 +4,7 @@ import numpy as np
 import threading
 from transformers import Wav2Vec2Processor, Wav2Vec2ForCTC
 from phonemizer.backend.espeak.wrapper import EspeakWrapper
-
-# Setup the Espeak library and the model
-EspeakWrapper.set_library("/opt/homebrew/Cellar/espeak/1.48.04_1/lib/libespeak.dylib")
-processor = Wav2Vec2Processor.from_pretrained("facebook/wav2vec2-lv-60-espeak-cv-ft")
-model = Wav2Vec2ForCTC.from_pretrained("facebook/wav2vec2-lv-60-espeak-cv-ft")
-
-# Global flag to control the recording state
-is_recording = True
+import pronounce_score as ps
 
 def process_audio(data):
     waveform = torch.tensor(data).float().cpu()
@@ -20,7 +13,7 @@ def process_audio(data):
         logits = model(input_values).logits
         predicted_ids = torch.argmax(logits, dim=-1)
         transcription = processor.batch_decode(predicted_ids)
-        print("Transcribed:", transcription[0])
+        return transcription[0]
 
 def record_audio():
     global is_recording
@@ -42,10 +35,29 @@ def listen_for_stop():
     input("Recording... Type enter to stop recording.\n")
     is_recording = False
 
-if __name__ == "__main__":
-    thread = threading.Thread(target=listen_for_stop)
-    thread.start()
-    recorded_audio = record_audio()
-    thread.join()  # Ensure the stop listening thread has finished
-    print("Processing...")
-    process_audio(recorded_audio[:, 0])  # Process the recording
+
+
+# Setup the Espeak library and the model
+EspeakWrapper.set_library("/opt/homebrew/Cellar/espeak/1.48.04_1/lib/libespeak.dylib")
+processor = Wav2Vec2Processor.from_pretrained("facebook/wav2vec2-lv-60-espeak-cv-ft")
+model = Wav2Vec2ForCTC.from_pretrained("facebook/wav2vec2-lv-60-espeak-cv-ft")
+
+text = "Chad the bull likes to kick."
+print(text)
+
+# Global flag to control the recording state
+is_recording = True
+
+thread = threading.Thread(target=listen_for_stop)
+thread.start()
+recorded_audio = record_audio()
+thread.join()  # Ensure the stop listening thread has finished
+print("Processing...")
+phonemes = process_audio(recorded_audio[:, 0])  # Process the recording
+
+print("Original: ", ps.text_to_phoneme(text))
+print("Spoken: ", phonemes)
+
+# Calculate the similarity between the expected text and the spoken phonemes
+similarity = ps.compare_text_to_phoneme(text, phonemes)
+print("Similarity:", similarity)
