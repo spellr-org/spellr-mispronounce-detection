@@ -14,6 +14,7 @@ def edit_cost(char):
     return 10
 
 def compare_ipa(expected, spoken):
+
     dp = [[0] * (len(spoken) + 1) for _ in range(len(expected) + 1)]
 
     # Initialize the matrix for base case
