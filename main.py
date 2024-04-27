@@ -7,6 +7,7 @@ from pydub import AudioSegment
 from transformers import Wav2Vec2Processor, Wav2Vec2ForCTC
 from phonemizer.backend.espeak.wrapper import EspeakWrapper
 import phoneme_alignment as aligner
+from Levenshtein import distance as levenshtein_distance
 
 # Global flag to control the recording state
 is_recording = True
@@ -40,7 +41,7 @@ def process_audio(data, model, processor):
         logits = model(input_values).logits
         predicted_ids = torch.argmax(logits, dim=-1)
         transcription = processor.batch_decode(predicted_ids)
-        return transcription[0].replace("ː", "").replace("ˈ", "").replace("ˌ", "")
+        return transcription[0].replace("ː", "").replace("ˈ", "").replace("ˌ", "").replace("dʒ", "ʤ").replace("ɡ", "g")
 
 def record_audio():
     global is_recording
@@ -113,3 +114,11 @@ distances = aligner.match(all_original_lists, spoken_list)
 # Print results
 for i, (chunk, match, dist) in distances.items():
     print(f"Expected: {chunk}, Best Match: {' '.join(match)}, Distance: {dist}")
+
+for i, (chunk, match, dist) in distances.items():
+    original = chunk
+    spoken = "".join(match).replace(" ", "")
+    distance = levenshtein_distance(original, spoken)
+    score = 1 - distance / len(original)
+    if score < 0.8:
+        print("mispronounced: ", text.split(" ")[i])
