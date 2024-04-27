@@ -41,7 +41,7 @@ def process_audio(data, model, processor):
         logits = model(input_values).logits
         predicted_ids = torch.argmax(logits, dim=-1)
         transcription = processor.batch_decode(predicted_ids)
-        return transcription[0].replace("ː", "").replace("ˈ", "").replace("ˌ", "").replace("dʒ", "ʤ").replace("ɡ", "g")
+        return transcription[0].replace("ː", "").replace("ˈ", "").replace("ˌ", "").replace("dʒ", "ʤ").replace("ɡ", "g").replace("ɔ", "ɑ").replace("ɚ", "ər")
 
 def record_audio():
     global is_recording
@@ -89,7 +89,7 @@ EspeakWrapper.set_library("/opt/homebrew/Cellar/espeak/1.48.04_1/lib/libespeak.d
 processor = Wav2Vec2Processor.from_pretrained("facebook/wav2vec2-lv-60-espeak-cv-ft")
 model = Wav2Vec2ForCTC.from_pretrained("facebook/wav2vec2-lv-60-espeak-cv-ft")
 
-text = "The dog jumped over the cat."
+text = "Hello there."
 print(text)
 
 thread = threading.Thread(target=listen_for_stop)
@@ -110,10 +110,6 @@ print("Original: ", original_list)
 print("Spoken: ", spoken_list)
 
 distances = aligner.match(all_original_lists, spoken_list)
-
-# Print results
-for i, (chunk, match, dist) in distances.items():
-    print(f"Expected: {chunk}, Best Match: {' '.join(match)}, Distance: {dist}")
 
 for i, (chunk, match, dist) in distances.items():
     original = chunk

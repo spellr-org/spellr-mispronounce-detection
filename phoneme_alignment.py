@@ -2,12 +2,13 @@ import eng_to_ipa as ipa
 from Levenshtein import distance as levenshtein_distance
 
 def text_to_phoneme(text):
-    result = ipa.convert(text).replace("ˈ", "").replace(".", "").replace("ˌ", "").replace(",", "").replace("dʒ", "ʤ").split(" ")
+    # ɔ to ɑ is loose
+    result = ipa.convert(text).replace("ˈ", "").replace(".", "").replace("ˌ", "").replace(",", "").replace("dʒ", "ʤ").replace("ɔ", "ɑ").replace("ɚ", "ər").split(" ")
     return result
 
 def text_to_phoneme_options(text):
     result = ipa.ipa_list(text)
-    return [[element.replace("ˈ", "").replace(".", "").replace("ˌ", "").replace(",", "").replace("dʒ", "ʤ") for element in sublist] for sublist in result]
+    return [[element.replace("ˈ", "").replace(".", "").replace("ˌ", "").replace(",", "").replace("dʒ", "ʤ").replace("ɔ", "ɑ").replace("ɚ", "ər") for element in sublist] for sublist in result]
 
 def match(expected, spoken):
     distances = {}
@@ -42,7 +43,6 @@ def match(expected, spoken):
         
         # remove match from spoken list to avoid reusing
         spoken =  spoken[best_end:]
-        print(spoken)
     
     return distances
 
