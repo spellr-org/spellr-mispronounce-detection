@@ -19,9 +19,10 @@ if not os.path.exists(chunk_directory):
 
 def save_chunk(data, file_name):
     """Save the audio chunk to an MP3 file."""
+    x = np.int16(data * 32767).reshape(-1, 1)
     # Convert the numpy array to audio segment
     audio_segment = AudioSegment(
-        data.tobytes(),
+        x.tobytes(),
         frame_rate=16000,
         sample_width=data.dtype.itemsize,
         channels=1
@@ -29,12 +30,13 @@ def save_chunk(data, file_name):
     # Define the file path
     file_path = os.path.join(chunk_directory, file_name)
     # Export the audio segment to an MP3 file
-    audio_segment.export(file_path, format="mp3")
+    audio_segment.export(file_path, format="mp3", bitrate="512k")
     print(f"Saved recording to {file_path}")
 
 def process_audio(data, model, processor):
     waveform = torch.tensor(data).float().cpu()
     input_values = processor(waveform, return_tensors="pt", sampling_rate=16000).input_values
+    print("input_values shape:", input_values.shape)
     with torch.no_grad():
         logits = model(input_values).logits
         predicted_ids = torch.argmax(logits, dim=-1)
@@ -44,8 +46,8 @@ def process_audio(data, model, processor):
 def record_audio():
     global is_recording
     # Allocate space for up to 1 minute of recording
-    myrecording = np.zeros((16000 * 60, 1), dtype='float64')
-    with sd.InputStream(samplerate=16000, channels=1, dtype='float64') as stream:
+    myrecording = np.zeros((16000 * 60, 1), dtype='float32')
+    with sd.InputStream(samplerate=16000, channels=1, dtype='float32') as stream:
         idx = 0
         while is_recording:
             data, overflowed = stream.read(1024)
@@ -89,5 +91,5 @@ print("Spoken: ", spoken_list)
 distances = aligner.match(original_list, spoken_list)
 
 # Print results
-for chunk, (match, dist) in distances.items():
-    print(f"Expected: {chunk}, Best Match: {' '.join(match)}, Distance: {dist}")
+for i, (match, dist) in distances.items():
+    print(f"Expected: {original_list[i]}, Best Match: {' '.join(match)}, Distance: {dist}")

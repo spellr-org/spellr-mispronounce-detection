@@ -37,7 +37,7 @@ def match(expected, spoken):
                     best_match = spoken_segment
                     best_start = start
                     best_end = end
-        distances[chunk] = (best_match, min_distance)
+        distances[index] = (best_match, min_distance)
 
         # if best start is not at the very beginning
         # that means that the phonemes before are loose
@@ -45,10 +45,9 @@ def match(expected, spoken):
 
         # these need to be attatched to the previous chunk if index is not 0
         if index != 0:
-            prev_chunk = expected[index - 1]
-            prev_match, prev_distance = distances[prev_chunk]
+            prev_match, prev_distance = distances[index - 1]
             # recompute distance with loose phonemes
-            distances[prev_chunk] = (prev_match + loose_phonemes, prev_distance + len(loose_phonemes))
+            distances[index - 1] = (prev_match + loose_phonemes, prev_distance + len(loose_phonemes))
 
         
         # remove match from spoken list to avoid reusing
@@ -59,11 +58,11 @@ def match(expected, spoken):
 # test main
 if __name__ == "__main__":
     # Example usage
-    expected = ['tʃad', 'ðə', 'bʊl', 'laɪks', 'tə', 'kɪk']
-    spoken = ['tʃ', 'eɪ', 'd', 'ð', 'i', 'b', 'u', 'ɐ', 'l', 'ɪ', 'k', 's', 't', 'u', 'k', 'aɪ', 'k']
+    expected = ['ðə', 'dɒɡ', 'dʒʌmpt', 'əʊvə', 'ðə', 'kat']
+    spoken = ['ð', 'ə', 'd', 'ɑ', 'ɡ', 'dʒ', 'ʌ', 'm', 'p', 't', 'oʊ', 'v', 'ɚ', 'ð', 'ə', 'k', 'æ', 't']
 
     distances = match(expected, spoken)
 
     # Print results
-    for chunk, (match, dist) in distances.items():
-        print(f"Expected: {chunk}, Best Match: {' '.join(match)}, Distance: {dist}")
+    for i, (match, dist) in distances.items():
+        print(f"Expected: {expected[i]}, Best Match: {' '.join(match)}, Distance: {dist}")

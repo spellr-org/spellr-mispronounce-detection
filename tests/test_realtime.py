@@ -17,19 +17,21 @@ chunk_directory = "audio_chunks"
 if not os.path.exists(chunk_directory):
     os.makedirs(chunk_directory)
 
-def save_chunk(data, idx):
+def save_chunk(data, file_name):
     """Save the audio chunk to an MP3 file."""
-    # Create an AudioSegment from the numpy array
+    x = np.int16(data * 32767).reshape(-1, 1)
+    # Convert the numpy array to audio segment
     audio_segment = AudioSegment(
-        data.tobytes(),
+        x.tobytes(),
         frame_rate=16000,
         sample_width=data.dtype.itemsize,
         channels=1
     )
-    # Save the segment as an MP3 file
-    file_path = os.path.join(chunk_directory, f"chunk_{idx}.mp3")
-    audio_segment.export(file_path, format="mp3")
-    print(f"Saved chunk {idx} to {file_path}")
+    # Define the file path
+    file_path = os.path.join(chunk_directory, file_name)
+    # Export the audio segment to an MP3 file
+    audio_segment.export(file_path, format="mp3", bitrate="512k")
+    print(f"Saved recording to {file_path}")
 
 def process_audio():
     global audio_queue
@@ -45,14 +47,14 @@ def process_audio():
             predicted_ids = torch.argmax(logits, dim=-1)
             transcription = processor.batch_decode(predicted_ids)
             print("You:", transcription[0].replace("ː", "").replace("ˈ", "").replace("ˌ", ""))
-        save_chunk(data, idx)  # Save the audio chunk for debugging
+        save_chunk(data, f"chunk_{int(idx)}.mp3")  # Save the audio chunk for debugging
         idx += 1
         audio_queue.task_done()
 
 def record_audio():
     global is_recording, audio_queue
     silence_threshold = -40  # Set silence threshold in dB
-    minimum_duration = 4800  # Minimum samples to consider for processing (0.3 seconds)
+    minimum_duration = int(16000 * 0.75)  # Minimum samples to consider for processing (0.3 seconds)
     buffer = np.zeros((16000 * 60, 1), dtype='float32')  # Buffer for 1 minute of recording
     last_chunk_start = 0
 
