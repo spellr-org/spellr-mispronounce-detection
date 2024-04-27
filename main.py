@@ -5,6 +5,10 @@ import threading
 from transformers import Wav2Vec2Processor, Wav2Vec2ForCTC
 from phonemizer.backend.espeak.wrapper import EspeakWrapper
 import pronounce_score as ps
+import phoneme_alignment as aligner
+
+# Global flag to control the recording state
+is_recording = True
 
 def process_audio(data):
     waveform = torch.tensor(data).float().cpu()
@@ -13,6 +17,7 @@ def process_audio(data):
         logits = model(input_values).logits
         predicted_ids = torch.argmax(logits, dim=-1)
         transcription = processor.batch_decode(predicted_ids)
+        # want to return a list of phonemes
         return transcription[0]
 
 def record_audio():
@@ -42,11 +47,8 @@ EspeakWrapper.set_library("/opt/homebrew/Cellar/espeak/1.48.04_1/lib/libespeak.d
 processor = Wav2Vec2Processor.from_pretrained("facebook/wav2vec2-lv-60-espeak-cv-ft")
 model = Wav2Vec2ForCTC.from_pretrained("facebook/wav2vec2-lv-60-espeak-cv-ft")
 
-text = "Chad the bull likes to kick."
+text = "The fan blows very fast."
 print(text)
-
-# Global flag to control the recording state
-is_recording = True
 
 thread = threading.Thread(target=listen_for_stop)
 thread.start()
@@ -55,9 +57,14 @@ thread.join()  # Ensure the stop listening thread has finished
 print("Processing...")
 phonemes = process_audio(recorded_audio[:, 0])  # Process the recording
 
-print("Original: ", ps.text_to_phoneme(text))
-print("Spoken: ", phonemes)
+original_list = ps.text_to_phoneme(text).split(" ")
+spoken_list = phonemes.split(" ")
 
-# Calculate the similarity between the expected text and the spoken phonemes
-similarity = ps.compare_text_to_phoneme(text, phonemes)
-print("Similarity:", similarity)
+print("Original: ", original_list)
+print("Spoken: ", spoken_list)
+
+distances = aligner.match(original_list, spoken_list)
+
+# Print results
+for chunk, (match, dist) in distances.items():
+    print(f"Expected: {chunk}, Best Match: {' '.join(match)}, Distance: {dist}")
