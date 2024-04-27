@@ -6,7 +6,6 @@ import os
 from pydub import AudioSegment
 from transformers import Wav2Vec2Processor, Wav2Vec2ForCTC
 from phonemizer.backend.espeak.wrapper import EspeakWrapper
-import pronounce_score as ps
 import phoneme_alignment as aligner
 
 # Global flag to control the recording state
@@ -66,7 +65,7 @@ def record_audio():
             
             if len(recent_volume) == num_batches and all(volume < -40 for volume in recent_volume) and not intervening:
                 intervening = True
-                print("Invervention detection")
+                print("Do you need help?")
             
             if not all(volume < -40 for volume in recent_volume):
                 intervening = False
@@ -98,19 +97,19 @@ recorded_audio = record_audio()
 thread.join()  # Ensure the stop listening thread has finished
 
 print("Processing...")
-phonemes = process_audio(recorded_audio[:, 0], model, processor)  # Process the recording
+spoken_list = process_audio(recorded_audio[:, 0], model, processor).split(" ")  # Process the recording
 
 # Save the entire recording for playback analysis
 save_chunk(recorded_audio, "complete_recording.mp3")
 
-original_list = ps.text_to_phoneme(text).split(" ")
-spoken_list = phonemes.split(" ")
+all_original_lists = aligner.text_to_phoneme_options(text)
+original_list = aligner.text_to_phoneme(text)
 
 print("Original: ", original_list)
 print("Spoken: ", spoken_list)
 
-distances = aligner.match(original_list, spoken_list)
+distances = aligner.match(all_original_lists, spoken_list)
 
 # Print results
-for i, (match, dist) in distances.items():
-    print(f"Expected: {original_list[i]}, Best Match: {' '.join(match)}, Distance: {dist}")
+for i, (chunk, match, dist) in distances.items():
+    print(f"Expected: {chunk}, Best Match: {' '.join(match)}, Distance: {dist}")
