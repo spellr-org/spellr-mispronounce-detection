@@ -47,10 +47,31 @@ def record_audio():
     global is_recording
     # Allocate space for up to 1 minute of recording
     myrecording = np.zeros((16000 * 60, 1), dtype='float32')
+
+    num_batches = 16
+    recent_volume = []
+    intervening = False
+
     with sd.InputStream(samplerate=16000, channels=1, dtype='float32') as stream:
         idx = 0
         while is_recording:
             data, overflowed = stream.read(1024)
+
+            rms = np.sqrt(np.mean(data**2))
+            current_volume = 20 * np.log10(rms + 1e-10)
+            recent_volume.append(current_volume)
+
+            if len(recent_volume) > num_batches:
+                recent_volume.pop(0)
+            
+            if len(recent_volume) == num_batches and all(volume < -40 for volume in recent_volume) and not intervening:
+                intervening = True
+                print("Invervention detection")
+            
+            if not all(volume < -40 for volume in recent_volume):
+                intervening = False
+
+
             if idx + 1024 <= myrecording.shape[0]:
                 myrecording[idx:idx + 1024] = data
                 idx += 1024
