@@ -30,7 +30,7 @@ def save_chunk(data, file_name):
     # Define the file path
     file_path = os.path.join(chunk_directory, file_name)
     # Export the audio segment to an MP3 file
-    audio_segment.export(file_path, format="mp3", bitrate="512k")
+    audio_segment.export(file_path, format="mp3", bitrate="256k")
     print(f"Saved recording to {file_path}")
 
 def process_audio(data, model, processor):

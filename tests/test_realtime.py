@@ -30,7 +30,7 @@ def save_chunk(data, file_name):
     # Define the file path
     file_path = os.path.join(chunk_directory, file_name)
     # Export the audio segment to an MP3 file
-    audio_segment.export(file_path, format="mp3", bitrate="512k")
+    audio_segment.export(file_path, format="mp3", bitrate="256k")
     print(f"Saved recording to {file_path}")
 
 def process_audio():
@@ -54,13 +54,16 @@ def process_audio():
 def record_audio():
     global is_recording, audio_queue
     silence_threshold = -40  # Set silence threshold in dB
-    minimum_duration = int(16000 * 0.75)  # Minimum samples to consider for processing (0.3 seconds)
+    minimum_duration = int(16000 * 0.75)  # Minimum samples to consider for processing
+    silence_duration = int(16000 * 0.4)  # Silence duration to consider as the end of a phrase
     buffer = np.zeros((16000 * 60, 1), dtype='float32')  # Buffer for 1 minute of recording
     last_chunk_start = 0
 
     with sd.InputStream(samplerate=16000, channels=1, dtype='float32') as stream:
         idx = 0
         keeper = False
+        ready_to_stop = False
+        last_silent_start = 0
         while is_recording:
             data, overflowed = stream.read(1024)
             if idx + 1024 <= buffer.shape[0]:
@@ -73,7 +76,14 @@ def record_audio():
                 if not keeper:
                     last_chunk_start = idx
 
-                if current_volume < silence_threshold and (idx - last_chunk_start) > minimum_duration:
+                if current_volume < silence_threshold and not ready_to_stop:
+                    last_silent_start = idx
+                    ready_to_stop = True
+                
+                if ready_to_stop and current_volume >= silence_threshold:
+                    ready_to_stop = False
+
+                if current_volume < silence_threshold and (idx - last_chunk_start) >= minimum_duration and ready_to_stop and (idx - last_silent_start) >= silence_duration:
                     audio_queue.put(buffer[last_chunk_start:idx, 0].copy())  # Enqueue data for processing
                     last_chunk_start = idx
                     keeper = False

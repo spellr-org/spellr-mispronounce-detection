@@ -20,7 +20,7 @@ channels = 1
 chunk_size = 16000 
 
 # Directory to save audio chunks
-chunk_directory = "audio_chunks"
+chunk_directory = "audio_chunks_v2"
 if not os.path.exists(chunk_directory):
     os.makedirs(chunk_directory)
 
@@ -37,8 +37,19 @@ def add_to_queue(indata, frames, time, status):
 
 def save_chunk(data, file_name):
     """Save the audio chunk to an MP3 file."""
-    audio_segment = AudioSegment(data.tobytes(), frame_rate=samplerate, sample_width=data.dtype.itemsize, channels=1)
-    audio_segment.export(os.path.join(chunk_directory, file_name), format="mp3")
+    x = np.int16(data * 32767).reshape(-1, 1)
+    # Convert the numpy array to audio segment
+    audio_segment = AudioSegment(
+        x.tobytes(),
+        frame_rate=16000,
+        sample_width=data.dtype.itemsize,
+        channels=1
+    )
+    # Define the file path
+    file_path = os.path.join(chunk_directory, file_name)
+    # Export the audio segment to an MP3 file
+    audio_segment.export(file_path, format="mp3", bitrate="512k")
+    print(f"Saved recording to {file_path}")
 
 def process_audio_from_queue():
     global audio_buffer
