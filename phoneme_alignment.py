@@ -20,7 +20,7 @@ def match(expected, spoken):
             for start in range(len(spoken)):
                 for end in range(start + 1, len(spoken) + 1):
                     spoken_segment = spoken[start:end]
-                    distance = levenshtein_distance(chunk, spoken_segment)
+                    distance = (start+1) * (levenshtein_distance(chunk, spoken_segment)+1)**2
                     if distance < min_distance:
                         min_distance = distance
                         best_chunk = chunk
@@ -42,6 +42,7 @@ def match(expected, spoken):
         
         # remove match from spoken list to avoid reusing
         spoken =  spoken[best_end:]
+        print(spoken)
     
     return distances
 
@@ -50,7 +51,7 @@ if __name__ == "__main__":
     # Example usage
     expected = ['ðə', 'dɒɡ', 'dʒʌmpt', 'əʊvə', 'ðə', 'kat']
     expected_options = [['ði', 'ðə'], ['dɔg'], ['ʤəmpt'], ['oʊvər'], ['ði', 'ðə'], ['kæt']]
-    spoken = ['ð', 'ə', 'd', 'ɑ', 'ɡ', 'dʒ', 'ʌ', 'm', 'p', 't', 'oʊ', 'v', 'ɚ', 'ð', 'ə', 'k', 'æ', 't']
+    spoken = ['ð', 'ɪ', 'd', 'æ', 'g', 'ʤ', 'ʌ', 'm', 'p', 't', 'oʊ', 'v', 'ɚ', 'ð', 'ə', 'k', 'ɑɹ', 't']
 
     distances = match(expected_options, spoken)
 
