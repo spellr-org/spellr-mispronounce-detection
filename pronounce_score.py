@@ -3,7 +3,7 @@ import subprocess
 def text_to_phoneme(text):
     # Call espeak with the --ipa option to get phonemes in International Phonetic Alphabet (IPA)
     result = subprocess.run(['espeak', '--ipa', '-q', text], capture_output=True, text=True)
-    return result.stdout.strip().replace("ˈ", "")
+    return result.stdout.strip().replace("ˈ", "").replace("ˌ", "")
 
 def __phoneme_cost(a, b):
     if a == b:

@@ -18,7 +18,7 @@ def process_audio(data):
         predicted_ids = torch.argmax(logits, dim=-1)
         transcription = processor.batch_decode(predicted_ids)
         # want to return a list of phonemes
-        return transcription[0]
+        return transcription[0].replace("ː", "")
 
 def record_audio():
     global is_recording
@@ -47,7 +47,7 @@ EspeakWrapper.set_library("/opt/homebrew/Cellar/espeak/1.48.04_1/lib/libespeak.d
 processor = Wav2Vec2Processor.from_pretrained("facebook/wav2vec2-lv-60-espeak-cv-ft")
 model = Wav2Vec2ForCTC.from_pretrained("facebook/wav2vec2-lv-60-espeak-cv-ft")
 
-text = "The fan blows very fast."
+text = "The dog jumped over the cat."
 print(text)
 
 thread = threading.Thread(target=listen_for_stop)
