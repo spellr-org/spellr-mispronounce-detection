@@ -5,13 +5,35 @@ from queue import Queue
 from transformers import Wav2Vec2Processor, Wav2Vec2ForCTC
 from phonemizer.backend.espeak.wrapper import EspeakWrapper
 import torch
+import os
+from pydub import AudioSegment
 
 # Global flag to control the recording state
 is_recording = True
 audio_queue = Queue()  # Queue to hold audio data for processing
 
+# Directory to save audio chunks
+chunk_directory = "audio_chunks"
+if not os.path.exists(chunk_directory):
+    os.makedirs(chunk_directory)
+
+def save_chunk(data, idx):
+    """Save the audio chunk to an MP3 file."""
+    # Create an AudioSegment from the numpy array
+    audio_segment = AudioSegment(
+        data.tobytes(),
+        frame_rate=16000,
+        sample_width=data.dtype.itemsize,
+        channels=1
+    )
+    # Save the segment as an MP3 file
+    file_path = os.path.join(chunk_directory, f"chunk_{idx}.mp3")
+    audio_segment.export(file_path, format="mp3")
+    print(f"Saved chunk {idx} to {file_path}")
+
 def process_audio():
     global audio_queue
+    idx = 0
     while is_recording or not audio_queue.empty():
         data = audio_queue.get()
         if data is None:
@@ -23,6 +45,8 @@ def process_audio():
             predicted_ids = torch.argmax(logits, dim=-1)
             transcription = processor.batch_decode(predicted_ids)
             print("You:", transcription[0].replace("ː", "").replace("ˈ", "").replace("ˌ", ""))
+        save_chunk(data, idx)  # Save the audio chunk for debugging
+        idx += 1
         audio_queue.task_done()
 
 def record_audio():
@@ -34,9 +58,7 @@ def record_audio():
 
     with sd.InputStream(samplerate=16000, channels=1, dtype='float32') as stream:
         idx = 0
-
         keeper = False
-
         while is_recording:
             data, overflowed = stream.read(1024)
             if idx + 1024 <= buffer.shape[0]:
